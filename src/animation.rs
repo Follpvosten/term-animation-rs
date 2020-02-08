@@ -62,8 +62,8 @@ impl Animation {
         let mut deleted = DeletedList::new();
         deleted.extend(self.do_callbacks());
         if self.physical_count > 0 {
-            self.find_collisions();
-            self.collision_handlers();
+            let collisions = self.find_collisions();
+            self.collision_handlers(collisions);
         }
         self.remove_deleted_entries();
         self.move_followers();
@@ -162,7 +162,36 @@ impl Animation {
         }
         collisions
     }
-    fn collision_handlers(&mut self) {}
+    fn collision_handlers(&mut self, collisions: Collisions) {
+        for collision in collisions {
+            let entities = (
+                self.entities.remove_entry(&collision.0),
+                self.entities.remove_entry(&collision.1),
+            );
+            match entities {
+                (Some((key1, mut ent1)), Some((key2, mut ent2))) => {
+                    // Process...
+                    if let Some(callback) = ent1.coll_handler.take() {
+                        callback(&mut ent1, self, &ent2);
+                        ent1.coll_handler = Some(callback);
+                    }
+                    if let Some(callback) = ent2.coll_handler.take() {
+                        callback(&mut ent2, self, &ent1);
+                        ent2.coll_handler = Some(callback);
+                    }
+                    // Put them back in
+                    self.entities.insert(key1, ent1);
+                    self.entities.insert(key2, ent2);
+                }
+                (Some((key, ent)), None) | (None, Some((key, ent))) => {
+                    self.entities.insert(key, ent);
+                }
+                (None, None) => {
+                    panic!("Something is very wrong; collision failed: entities not found.")
+                }
+            };
+        }
+    }
     fn remove_deleted_entries(&mut self) {}
     fn move_followers(&mut self) {}
     fn build_screen(&mut self) {}

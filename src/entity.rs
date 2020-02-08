@@ -13,7 +13,7 @@ pub struct CallbackResult {
     pub new_frame: Option<usize>,
 }
 pub type Callback = Box<dyn Fn(&mut Entity, &mut Animation) -> CallbackResult>;
-pub type CollHandler = Box<dyn Fn(&mut Entity, &mut Animation, &mut Entity) -> ShouldRerender>;
+pub type CollHandler = Box<dyn Fn(&mut Entity, &mut Animation, &Entity)>;
 
 pub struct StyledLine(pub Vec<StyledContent<char>>);
 pub struct StyledSprite {
