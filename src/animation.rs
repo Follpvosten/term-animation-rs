@@ -65,7 +65,7 @@ impl Animation {
             let collisions = self.find_collisions();
             self.collision_handlers(collisions);
         }
-        self.remove_deleted_entries();
+        self.remove_deleted_entries(deleted);
         self.move_followers();
         self.build_screen();
         self.display_screen();
@@ -192,7 +192,16 @@ impl Animation {
             };
         }
     }
-    fn remove_deleted_entries(&mut self) {}
+    fn remove_deleted_entries(&mut self, deleted: DeletedList) {
+        for ent_name in deleted {
+            if let Some(mut entity) = self.entities.remove(&ent_name) {
+                // Entity practically deleted at this point...
+                if let Some(callback) = entity.death_callback.take() {
+                    callback(&mut entity, self);
+                }
+            }
+        }
+    }
     fn move_followers(&mut self) {}
     fn build_screen(&mut self) {}
     fn display_screen(&mut self) {}
