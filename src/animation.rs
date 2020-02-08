@@ -1,10 +1,12 @@
-use crossterm::{style::Color, ExecutableCommand};
-use std::collections::HashMap;
+use crossterm::style::Color;
+use std::collections::{HashMap, HashSet};
 use std::io::Stdout;
 
 use crate::entity::{CallbackResult, Entity};
 
-type DeletedList = std::collections::HashSet<String>;
+type DeletedList = HashSet<String>;
+type Collision = (String, String);
+type Collisions = HashSet<Collision>;
 
 pub struct Animation {
     // in theory, we'll only need this for storing entities...
@@ -136,7 +138,30 @@ impl Animation {
         std::mem::swap(&mut entities, &mut self.entities);
         deleted
     }
-    fn find_collisions(&mut self) {}
+    fn find_collisions(&self) -> Collisions {
+        let mut collisions = Collisions::new();
+        for me in self.entities.values() {
+            if !me.physical {
+                continue;
+            }
+            for other in self.entities.values() {
+                if other.name == me.name {
+                    // Don't check for self
+                    continue;
+                }
+                if me.intersects(other) {
+                    let already_there = collisions.iter().any(|(ent1, ent2)| {
+                        ent1 == &me.name && ent2 == &other.name
+                            || ent1 == &other.name && ent2 == &me.name
+                    });
+                    if !already_there {
+                        collisions.insert((me.name.clone(), other.name.clone()));
+                    }
+                }
+            }
+        }
+        collisions
+    }
     fn collision_handlers(&mut self) {}
     fn remove_deleted_entries(&mut self) {}
     fn move_followers(&mut self) {}
