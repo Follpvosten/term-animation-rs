@@ -83,7 +83,7 @@ impl Animation {
         let mut entities = HashMap::with_capacity(self.entities.capacity());
         // Pull out the entities into a new hashmap.
         std::mem::swap(&mut entities, &mut self.entities);
-        for (_, mut entity) in entities.iter_mut() {
+        for mut entity in entities.values_mut() {
             if let Some(ref _time) = entity.die_time {
                 todo!("Handling die_time is not implemented yet!")
             }
@@ -102,10 +102,8 @@ impl Animation {
                 }
             }
             if entity.die_offscreen
-                // If our width or height is higher than 32.767, we have other problems.
-                //                  v                     v
-                && (entity.pos.x >= (self.width as i16)
-                    || entity.pos.y >= (self.height as i16)
+                && (entity.pos.x >= self.width
+                    || entity.pos.y >= self.height
                     || entity.pos.x < -entity.width
                     || entity.pos.y < -entity.height)
             {
@@ -202,7 +200,39 @@ impl Animation {
             }
         }
     }
-    fn move_followers(&mut self) {}
+    fn move_followers(&mut self) {
+        let following_entities: Vec<(Entity, String)> = self
+            .entities
+            .values()
+            .cloned()
+            .filter_map(|mut ent| {
+                let follow_entity = ent.follow_entity.take()?;
+                Some((ent, follow_entity))
+            })
+            .collect();
+        for (mut follower, follow_entity_name) in following_entities {
+            if let Some(leader) = self.entities.get(&follow_entity_name) {
+                // Process follow
+                if let Some(x) = follower.follow_offset.x {
+                    follower.set_x(x + leader.pos.x, self.width);
+                }
+                if let Some(y) = follower.follow_offset.y {
+                    follower.set_y(y + leader.pos.y, self.height);
+                }
+                if let Some(z) = follower.follow_offset.z {
+                    follower.set_z(z + leader.pos.z);
+                }
+                if let Some(frame) = follower.follow_offset.frame {
+                    follower.set_frame(frame + leader.current_frame);
+                }
+            }
+            // Put the values back in
+            follower.follow_entity = Some(follow_entity_name);
+            if let Some(entry) = self.entities.get_mut(&follower.name) {
+                *entry = follower;
+            }
+        }
+    }
     fn build_screen(&mut self) {}
     fn display_screen(&mut self) {}
     fn track_framerate(&mut self) {}

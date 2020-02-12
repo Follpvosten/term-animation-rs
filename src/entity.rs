@@ -5,17 +5,21 @@ use crossterm::style::StyledContent;
 use crate::Animation;
 
 pub type ShouldRerender = bool;
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 pub struct CallbackResult {
     pub new_x: Option<i16>,
     pub new_y: Option<i16>,
     pub new_z: Option<i16>,
     pub new_frame: Option<usize>,
 }
-pub type Callback = Box<dyn Fn(&mut Entity, &mut Animation) -> CallbackResult>;
-pub type CollHandler = Box<dyn Fn(&mut Entity, &mut Animation, &Entity)>;
+//trait CallbackTrait:  + Clone {}
+pub type Callback = Box<fn(&mut Entity, &mut Animation) -> CallbackResult>;
+//trait CollHandlerTrait:  + Clone {}
+pub type CollHandler = Box<fn(&mut Entity, &mut Animation, &Entity)>;
 
+#[derive(Clone)]
 pub struct StyledLine(pub Vec<StyledContent<char>>);
+#[derive(Clone)]
 pub struct StyledSprite {
     pub lines: Vec<StyledLine>,
 }
@@ -30,7 +34,7 @@ impl StyledSprite {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Entity {
     pub name: String,
     // appearance
@@ -47,7 +51,7 @@ pub struct Entity {
     pub wrap: bool,
     pub callback: Option<Callback>,
     pub follow_entity: Option<String>,
-    pub follow_offset: Option<u16>,
+    pub follow_offset: Offset,
     // state
     pub current_frame: usize,
     // entity death
@@ -133,6 +137,14 @@ pub struct Position {
     pub x: i16,
     pub y: i16,
     pub z: i16,
+}
+
+#[derive(Clone, Copy, PartialEq, Debug, Default)]
+pub struct Offset {
+    pub x: Option<i16>,
+    pub y: Option<i16>,
+    pub z: Option<i16>,
+    pub frame: Option<usize>,
 }
 
 #[cfg(test)]
